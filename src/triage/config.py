@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     approval_ttl_minutes: int = 60
 
     # --- Telemetry ---
-    trace_exporter: TraceExporter = TraceExporter.CONSOLE
+    trace_exporter: TraceExporter = TraceExporter.NONE
     otlp_endpoint: str = "http://localhost:4318"
     gcp_project: str | None = None
     enable_cloud_monitoring: bool = False
