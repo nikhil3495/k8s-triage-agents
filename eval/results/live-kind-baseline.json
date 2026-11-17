@@ -1,0 +1,206 @@
+{
+  "run_at": "2026-11-17T18:31:09.988767+00:00",
+  "mode": "live",
+  "model": "baseline",
+  "models": {
+    "supervisor": "baseline",
+    "worker": "baseline",
+    "critic": "baseline"
+  },
+  "retrieval_mode": "bm25",
+  "threshold": 0.75,
+  "summary": {
+    "scenarios": 8,
+    "root_cause_accuracy": 1.0,
+    "evidence_recall": 0.917,
+    "runbook_hit_at_3": 1.0,
+    "critic_agreement": 1.0,
+    "latency_ms_p50": 1143.2,
+    "latency_ms_max": 2835.0,
+    "cost_usd_total": 0.0,
+    "cost_usd_mean": 0.0
+  },
+  "passed": true,
+  "scenarios": [
+    {
+      "scenario": "bad-image-tag",
+      "status": "completed",
+      "predicted_category": "image_pull",
+      "expected_category": "image_pull",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "imagepullbackoff",
+        "crashloopbackoff",
+        "failing-rollout"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 2835.029999987455,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 3.12
+    },
+    {
+      "scenario": "broken-service-selector",
+      "status": "completed",
+      "predicted_category": "service_selector",
+      "expected_category": "service_selector",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "service-no-endpoints",
+        "pvc-binding",
+        "readiness-probe-failure"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 2214.9711000092793,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 2.52
+    },
+    {
+      "scenario": "cpu-throttling",
+      "status": "completed",
+      "predicted_category": "cpu_throttling",
+      "expected_category": "cpu_throttling",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "cpu-throttling-high-latency",
+        "hpa-not-scaling",
+        "pending-pods-insufficient-resources"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 1073.6475999874528,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 1.19
+    },
+    {
+      "scenario": "crashloop-command",
+      "status": "completed",
+      "predicted_category": "crashloop",
+      "expected_category": "crashloop",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "crashloopbackoff",
+        "oomkilled",
+        "imagepullbackoff"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 906.526999984635,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 0.99
+    },
+    {
+      "scenario": "failing-readiness",
+      "status": "completed",
+      "predicted_category": "readiness_probe",
+      "expected_category": "readiness_probe",
+      "root_cause_correct": true,
+      "evidence_recall": 0.667,
+      "evidence_missing": [
+        "/healthz"
+      ],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "readiness-probe-failure",
+        "cpu-throttling-high-latency",
+        "crashloopbackoff"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 1250.9967000223696,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 1.37
+    },
+    {
+      "scenario": "missing-configmap",
+      "status": "completed",
+      "predicted_category": "missing_config",
+      "expected_category": "missing_config",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "missing-configmap-secret",
+        "imagepullbackoff",
+        "hpa-not-scaling"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 956.5868999925442,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 1.06
+    },
+    {
+      "scenario": "oom-killed",
+      "status": "completed",
+      "predicted_category": "oom",
+      "expected_category": "oom",
+      "root_cause_correct": true,
+      "evidence_recall": 1.0,
+      "evidence_missing": [],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "oomkilled",
+        "crashloopbackoff",
+        "cpu-throttling-high-latency"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 1132.225000008475,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 1.24
+    },
+    {
+      "scenario": "unschedulable",
+      "status": "completed",
+      "predicted_category": "unschedulable",
+      "expected_category": "unschedulable",
+      "root_cause_correct": true,
+      "evidence_recall": 0.667,
+      "evidence_missing": [
+        "failedscheduling"
+      ],
+      "runbook_hit_at_3": true,
+      "runbooks_top3": [
+        "pending-pods-insufficient-resources",
+        "pvc-binding",
+        "hpa-not-scaling"
+      ],
+      "critic_verdict": "PASS",
+      "critic_rounds": 1,
+      "critic_agreement": true,
+      "latency_ms": 1154.106400004821,
+      "cost_usd": 0.0,
+      "confidence": 0.7,
+      "wall_s": 1.29
+    }
+  ]
+}
