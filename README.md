@@ -2,15 +2,54 @@
 
 **A supervisor agent built with Google's Agent Development Kit (ADK) and Gemini investigates a broken Kubernetes namespace. It delegates to log, metrics and runbook-retrieval specialists, has a self-reflection critic check the root cause, and queues fixes for human approval. Every step is traced with OpenTelemetry.**
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![ci](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/ci.yml)
 ![coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)
 ![tests](https://img.shields.io/badge/tests-83%20passing-brightgreen)
-![eval](https://img.shields.io/badge/eval%20(baseline%2C%20kind)-8%2F8-brightgreen)
+![eval baseline](https://img.shields.io/badge/eval%20(baseline%2C%20kind)-8%2F8-brightgreen)
+![eval gemini](https://img.shields.io/badge/eval%20(gemini)-pending-lightgrey)
+![deploy](https://img.shields.io/badge/cloud%20run-optional%2C%20not%20deployed-lightgrey)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![python](https://img.shields.io/badge/python-3.12-blue)
 ![google-adk](https://img.shields.io/badge/google--adk-2.14.1-4285F4)
 
-> **Live demo:** _pending deployment._ `scripts/deploy.sh` is ready, but the build machine had no authenticated `gcloud` session. See [STATUS.md](STATUS.md).
-> CI/eval badges get added once the workflows are enabled (see [STATUS.md](STATUS.md)). The badges above come from local runs on 2026-11-17.
+> **Runs fully offline.** Nothing is hosted: clone it and run it locally with Docker or `uv`. No GCP account is needed, and no API key either (the offline `baseline` backend). Cloud Run deployment is optional and scripted, but not deployed. The `ci` badge is live from GitHub Actions; coverage, test and eval badges come from the runs recorded in [STATUS.md](STATUS.md).
+
+## Run locally
+**1. Docker Compose: API + UI + Jaeger, no key needed**
+```bash
+git clone https://github.com/nikhil3495/k8s-triage-agents && cd k8s-triage-agents
+cp .env.example .env               # ships with LLM_BACKEND=baseline
+docker compose up --build
+# UI      http://localhost:8080   (pick a recorded scenario, e.g. oom-killed, and investigate)
+# traces  http://localhost:16686  (Jaeger, service "k8s-triage-agents")
+```
+The default `CLUSTER_MODE=replay` uses the 8 incidents recorded from a real kind cluster (`eval/fixtures/`), so no cluster is needed either. Approve from the UI with `APPROVER_TOKEN` from `.env`. In replay mode the executor is simulated.
+
+**2. Offline baseline mode without Docker (`LLM_BACKEND=baseline`)**
+```bash
+uv sync
+LLM_BACKEND=baseline uv run uvicorn triage.api.app:app --port 8080
+LLM_BACKEND=baseline uv run triage investigate --scenario oom-killed --symptom "checkout keeps restarting"
+uv run python -m eval.run_eval --mode replay --model baseline     # offline eval, 8 scenarios
+```
+`baseline` is a deterministic rule-based stand-in for Gemini. It drives the *real* ADK agent graph, tools, RAG, critic loop, HITL and tracing at zero cost. Its answers are **not** model output; the UI banner and `/readyz` say so.
+
+**3. Gemini mode (with a key)**
+```bash
+# in .env: LLM_BACKEND=gemini and GEMINI_API_KEY=...  (https://aistudio.google.com/apikey)
+uv run python scripts/list_models.py                               # confirm the configured model ids exist
+docker compose up --build                                          # or: uv run uvicorn triage.api.app:app --port 8080
+uv run python -m eval.run_eval --mode replay --model gemini        # real accuracy numbers
+uv run python -m scripts.build_index                               # optional: hybrid BM25 + embedding index
+```
+
+**4. ADK dev UI and live kind cluster**
+```bash
+uv run adk web adk_agents                                          # step through every agent / LLM / tool call
+kind create cluster --name triage-eval
+CLUSTER_MODE=live uv run triage investigate --namespace <ns> --symptom "..."
+uv run python -m eval.run_eval --mode live --model baseline --record   # inject 8 faults, score, refresh fixtures
+```
 
 ![Triage console](docs/img/ui-investigation.png)
 <sub>The console after an investigation of the recorded `oom-killed` incident. This screenshot was taken in **offline baseline mode** (`LLM_BACKEND=baseline`, a deterministic stand-in for Gemini; no API key was available). The banner says so, and token and cost figures are therefore 0.</sub>
@@ -69,7 +108,7 @@ The baseline is a deterministic, rule-based stand-in model, written knowing thes
 
 ## Observability
 ![Trace waterfall](docs/img/trace-waterfall-jaeger.png)
-<sub>One investigation, 85 spans, exported over OTLP to Jaeger (docker-compose). ADK's native `invoke_agent` / `execute_tool` / `generate_content` spans nest with ours: `agent:<name>`, `llm:<model>` (with `llm.input_tokens`, `llm.output_tokens`, `llm.tokens_per_sec`, `llm.cost_usd`, `latency_ms`) and `tool:<name>`. In production the same spans go to **Cloud Trace** (`TRACE_EXPORTER=gcp`). A Cloud Trace screenshot is pending deployment.</sub>
+<sub>One investigation, 85 spans, exported over OTLP to Jaeger (docker-compose). ADK's native `invoke_agent` / `execute_tool` / `generate_content` spans nest with ours: `agent:<name>`, `llm:<model>` (with `llm.input_tokens`, `llm.output_tokens`, `llm.tokens_per_sec`, `llm.cost_usd`, `latency_ms`) and `tool:<name>`. With `TRACE_EXPORTER=gcp` the same spans go to **Cloud Trace**. That exporter is wired, but it hasn't been exercised because nothing is deployed.</sub>
 
 - **Cost per request:** a per-model price table ([`pricing.py`](src/triage/telemetry/pricing.py), checked 2026-11-17) times tokens per LLM call. It's aggregated across nested AgentTool runs and set on the root span (`llm.cost_usd`), and returned in `GET /investigations/{id}` → `cost_usd` with a per-agent breakdown.
 - **Metrics** (OTel → Cloud Monitoring, `workload.googleapis.com/triage.*`): request latency, tokens/sec per agent, cost per request, critic verdicts (rejection rate), approval wait time. The dashboard is [`deploy/dashboards/cloud-monitoring-dashboard.json`](deploy/dashboards/cloud-monitoring-dashboard.json). There's also `GET /metrics/summary`.
@@ -81,44 +120,23 @@ Agents have **no** tool that changes the cluster. `propose_remediation` validate
 ## Persistent sessions and resume
 Each investigation is an ADK session in `DatabaseSessionService` (SQLite locally; Postgres or Vertex AI Agent Engine sessions in the cloud via `SESSION_DB_URL`). The ADK app is `ResumabilityConfig(is_resumable=True)`: every event and state delta is persisted as it happens, and `after_agent_callback`s record a checkpoint per sub-agent step. If the process or the model dies, the investigation is `failed` with its `last_invocation_id`. `POST /investigations/{id}/resume` calls `runner.run_async(invocation_id=…)` and continues from the last event; completed sub-agents are not re-run (that's what the test asserts).
 
-## Quickstart
+## Optional: Cloud Run (not deployed)
+`scripts/deploy.sh` deploys to Cloud Run in asia-south1: replay mode, min 0 / max 2 instances, 1 vCPU / 1 GiB, secrets from Secret Manager, traces to Cloud Trace. It then runs `scripts/smoke_test.sh`. It is **deploy-ready but not live**: this project is run offline by choice. The GitHub `deploy` workflow is manual-only (`workflow_dispatch`) and skips itself unless the `GCP_PROJECT` repo variable is set.
 ```bash
-git clone https://github.com/nikhil3495/k8s-triage-agents && cd k8s-triage-agents
-uv sync && cp .env.example .env            # add GEMINI_API_KEY
-
-# 1) Local API + UI + Jaeger
-docker compose up --build                   # UI http://localhost:8080, traces http://localhost:16686
-# or without Docker:
-uv run uvicorn triage.api.app:app --port 8080
-#   no key? LLM_BACKEND=baseline runs the offline stand-in (clearly labelled)
-
-# 2) CLI
-uv run triage investigate --scenario oom-killed --symptom "checkout keeps restarting"
-uv run triage approve <action_id> --token "$APPROVER_TOKEN"
-
-# 3) ADK dev UI - step through every agent / LLM call / tool call
-uv run adk web adk_agents
-
-# 4) Live mode against kind
-kind create cluster --name triage-eval
-CLUSTER_MODE=live uv run triage investigate --namespace <ns> --symptom "..."
-uv run python -m eval.run_eval --mode live --model gemini --record   # inject 8 faults, score, refresh fixtures
-
-# 5) Cloud Run (asia-south1, replay mode, min 0 / max 2 instances)
-gcloud auth login && gcloud config set project <id>
-GEMINI_API_KEY=... ./scripts/deploy.sh      # deploys + runs scripts/smoke_test.sh
+gcloud auth login && gcloud config set project <id>     # project with billing enabled
+GEMINI_API_KEY=... ./scripts/deploy.sh
 ```
 
 ## Engineering
 - Python 3.12, `uv`, `ruff` (lint + format), **`mypy --strict`** on `src/`, 83 tests, **96% coverage** (LLM-free: a scripted fake model drives the *real* ADK graph). Structured JSON logs.
 - Unit tests mock the LLM and the cluster. Integration tests run the whole graph over the 8 fixtures recorded from kind.
-- CI: lint, mypy, tests + coverage, offline eval, Docker build, gitleaks, pip-audit. Release gate: kind eval with Gemini. Deploy: Cloud Build → Artifact Registry → Cloud Run via Workload Identity Federation.
+- CI: lint, mypy, tests + coverage, offline eval, Docker build, gitleaks, pip-audit. Release gate (`eval.yml`, on tags): kind eval, gate at accuracy ≥ 0.75. Optional manual deploy: Cloud Build → Artifact Registry → Cloud Run via Workload Identity Federation.
 - Multi-stage, non-root Docker image. RBAC: read-only ClusterRole for investigators and a separate namespaced Role for remediation ([`deploy/k8s-rbac`](deploy/k8s-rbac)).
 - Docs: [ARCHITECTURE](docs/ARCHITECTURE.md) · [DECISIONS](docs/DECISIONS.md) · [EVAL](docs/EVAL.md) · [SECURITY](docs/SECURITY.md) · [RUNBOOK](docs/RUNBOOK.md)
 
 ## Limitations (honest)
 - **No Gemini numbers yet.** Every eval so far used the rule-based baseline; the Gemini eval rows are pending a keyed run.
-- **The public demo runs on recorded snapshots** (replay mode, simulated writer), not a live cluster. The snapshots are real `kind` captures, but they are frozen in time.
+- **Not deployed.** There is no hosted demo; it runs locally. Replay mode uses recorded snapshots and a simulated writer. The snapshots are real `kind` captures, but they are frozen in time.
 - Metrics come from metrics-server (usage vs limit). CPU throttling is inferred from usage near the limit, not from cgroup `nr_throttled`. There's no Prometheus integration yet.
 - API key and approver token are static secrets. Production should put IAP/OIDC in front and map approvers to identities.
 - The Vertex AI Agent Engine session backend for Cloud Run is wired but not yet exercised end to end. SQLite is the tested path.
