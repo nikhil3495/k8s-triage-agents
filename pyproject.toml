@@ -1,0 +1,94 @@
+[project]
+name = "triage"
+version = "0.1.0"
+description = "Multi-agent Kubernetes incident triage with Google ADK + Gemini, RAG over runbooks, OpenTelemetry, Cloud Run"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Nikhil Bansiwal" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "aiosqlite",
+    "asyncpg>=0.32.0",
+    "fastapi",
+    "google-adk",
+    "greenlet>=3.5.6",
+    "httpx",
+    "kubernetes",
+    "numpy",
+    "opentelemetry-exporter-gcp-monitoring",
+    "opentelemetry-exporter-gcp-trace",
+    "opentelemetry-exporter-otlp-proto-http",
+    "opentelemetry-sdk",
+    "pydantic",
+    "pydantic-settings",
+    "python-json-logger",
+    "pyyaml",
+    "rank-bm25",
+    "sqlalchemy",
+    "sse-starlette",
+    "typer",
+    "uvicorn[standard]",
+]
+
+[project.scripts]
+triage = "triage.cli.main:app"
+
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "pip-audit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+    "types-PyYAML",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "eval", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "D", "ANN", "ASYNC", "PT"]
+ignore = ["D417", "D203", "D213", "D100", "D104", "D105", "D107", "ANN401", "S101", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "ANN", "S105", "S106", "S108"]
+"eval/**" = ["D", "S603", "S607"]
+"scripts/**" = ["D", "S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["kubernetes.*", "rank_bm25.*", "google.cloud.*", "pythonjsonlogger.*", "sse_starlette.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["integration: uses replay fixtures end-to-end"]
+
+[tool.coverage.run]
+source = ["src/triage"]
+omit = [
+    # Thin wrappers over live external systems; exercised by eval/ on kind and in prod.
+    "src/triage/k8s/live.py",
+    "src/triage/rag/embeddings.py",
+    "src/triage/agents/agent.py",
+    "src/triage/cli/main.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
