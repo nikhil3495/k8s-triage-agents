@@ -6,10 +6,10 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
-from eval.baseline import BaselineLlm
 from eval.harness import load_scenarios
 from eval.scoring import score
 
+from triage.agents.baseline import BaselineLlm
 from triage.agents.factory import Models
 from triage.config import REPO_ROOT
 from triage.investigations import InvestigationService

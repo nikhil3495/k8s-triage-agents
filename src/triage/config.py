@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     critic_model: str = "gemini-3.8-flash"
     embedding_model: str = "gemini-embedding-001"
     gemini_api_key: SecretStr | None = None
+    #: "gemini" (default) or "baseline": the deterministic rule-based policy in
+    #: triage.agents.baseline - for offline demos/CI only, labelled as such everywhere.
+    llm_backend: str = Field(default="gemini", pattern="^(gemini|baseline)$")
 
     # --- Agent loop guardrails ---
     max_critic_rounds: int = Field(default=2, ge=1, le=5)

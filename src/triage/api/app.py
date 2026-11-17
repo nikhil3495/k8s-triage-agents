@@ -117,11 +117,14 @@ def create_app(service_factory: Callable[[], InvestigationService] | None = None
             "retrieval_mode": rt.retriever.mode,
             "runbook_chunks": len(rt.retriever.chunks),
             "scenarios": list_scenarios(rt.settings.replay_fixtures_dir),
+            "llm_backend": rt.settings.llm_backend,
             "models": {
                 "supervisor": rt.settings.supervisor_model,
                 "worker": rt.settings.worker_model,
                 "critic": rt.settings.critic_model,
-            },
+            }
+            if rt.settings.llm_backend == "gemini"
+            else dict.fromkeys(("supervisor", "worker", "critic"), "rule-based-baseline (no LLM)"),
             "llm_configured": rt.settings.gemini_api_key is not None,
         }
 

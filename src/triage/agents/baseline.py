@@ -156,6 +156,76 @@ def _evidence(blob: str, category: str) -> list[dict[str, str]]:
     return found[:8]
 
 
+def _findings(obs: list[tuple[str, Any]]) -> list[Any]:
+    """Parse the JSON observations embedded in worker findings."""
+    out: list[Any] = []
+    for name, resp in obs:
+        if name not in ("LogAgent", "MetricsAgent"):
+            continue
+        text = resp.get("result", "") if isinstance(resp, dict) else str(resp)
+        body = str(text).split("FINDINGS:\n", 1)[-1]
+        try:
+            out.extend(json.loads(body))
+        except ValueError:
+            continue
+    return out
+
+
+def _walk(obj: Any, key: str) -> list[Any]:
+    found: list[Any] = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == key:
+                found.append(v)
+            found.extend(_walk(v, key))
+    elif isinstance(obj, list):
+        for v in obj:
+            found.extend(_walk(v, key))
+    return found
+
+
+def _remediation_for(category: str, findings: list[Any]) -> dict[str, Any] | None:
+    """Map a category to one of the allowed actions (always gated by human approval)."""
+    deployments = [d for ds in _walk(findings, "deployments") for d in ds]
+    containers = [c for c in _walk(findings, "container") if isinstance(c, str)]
+    if not deployments:
+        return None
+    dep = str(deployments[0].get("name"))
+    container = containers[0] if containers else "app"
+    if category in ("image_pull", "crashloop", "readiness_probe"):
+        return {
+            "action": "rollback_deployment",
+            "deployment": dep,
+            "rationale": f"{category} started with the latest rollout; roll back to the "
+            "previous ReplicaSet revision.",
+        }
+    if category == "oom":
+        return {
+            "action": "patch_resources",
+            "deployment": dep,
+            "container": container,
+            "memory_limit": "256Mi",
+            "rationale": "Container is OOMKilled at its memory limit; raise the limit.",
+        }
+    if category == "cpu_throttling":
+        return {
+            "action": "patch_resources",
+            "deployment": dep,
+            "container": container,
+            "cpu_limit": "500m",
+            "rationale": "Container is pinned at its CPU limit; raise the limit.",
+        }
+    if category == "unschedulable":
+        return {
+            "action": "patch_resources",
+            "deployment": dep,
+            "container": container,
+            "cpu_request": "100m",
+            "rationale": "CPU request exceeds any node's allocatable CPU; lower it.",
+        }
+    return None
+
+
 class BaselineLlm(BaseLlm):
     """Rule-based policy that plays every agent role."""
 
@@ -163,11 +233,13 @@ class BaselineLlm(BaseLlm):
 
     @property
     def capabilities(self) -> LlmCapabilities:
+        """Declare structured output + tools support (final answer is JSON)."""
         return LlmCapabilities(output_schema_and_tools=True)
 
     async def generate_content_async(
         self, llm_request: LlmRequest, stream: bool = False
     ) -> AsyncGenerator[LlmResponse, None]:
+        """Return the next tool call or answer for whichever agent is asking."""
         agent = _agent(llm_request)
         obs = _observations(llm_request)
         part = getattr(self, f"_{agent.lower()}")(llm_request, obs)
@@ -248,6 +320,28 @@ class BaselineLlm(BaseLlm):
         rb = str(next(o for n, o in obs if n == "RunbookAgent"))
         refs = re.findall(r"[a-z0-9]+(?:-[a-z0-9]+)*", rb.split("RUNBOOKS:", 1)[-1])[:3]
         evidence = _evidence(blob, category)
+        remediation = _remediation_for(category, _findings(obs))
+        proposals: list[dict[str, Any]] = []
+        if remediation is not None:
+            if "propose_remediation" not in done:
+                return _call("propose_remediation", **remediation)
+            result = next(o for n, o in obs if n == "propose_remediation")
+            proposals.append(
+                {
+                    "action": remediation["action"],
+                    "deployment": remediation["deployment"],
+                    "rationale": remediation["rationale"],
+                    "pending_action_id": (result or {}).get("pending_action_id"),
+                }
+            )
+        elif category in ("missing_config", "service_selector"):
+            proposals.append(
+                {
+                    "action": "manual",
+                    "rationale": "create the missing object / fix the Service selector "
+                    "(outside the allowed automated actions)",
+                }
+            )
         return _text(
             json.dumps(
                 {
@@ -256,7 +350,7 @@ class BaselineLlm(BaseLlm):
                     "category": category,
                     "confidence": 0.7 if category != "unknown" else 0.2,
                     "evidence": evidence,
-                    "proposed_remediations": [],
+                    "proposed_remediations": proposals,
                     "runbook_refs": refs,
                 }
             )

@@ -112,7 +112,10 @@ async function api(path, opts = {}) {
 async function init() {
   try {
     const ready = await api("/readyz");
-    $("mode").textContent = `Mode: ${ready.cluster_mode} · retrieval: ${ready.retrieval_mode} · supervisor ${ready.models.supervisor}, workers ${ready.models.worker}`;
+    const llm = ready.llm_backend === "baseline"
+      ? "LLM: OFFLINE rule-based baseline (no Gemini key configured)"
+      : `supervisor ${ready.models.supervisor}, workers ${ready.models.worker}, critic ${ready.models.critic}`;
+    $("mode").textContent = `Mode: ${ready.cluster_mode} · retrieval: ${ready.retrieval_mode} · ${llm}`;
   } catch (e) { $("mode").textContent = "Service not ready: " + e.message; }
   scenarios = await api("/scenarios").catch(() => []);
   $("scenario").innerHTML = scenarios.map((s) => `<option value="${esc(s.name)}">${esc(s.name)} (ns ${esc(s.namespace)})</option>`).join("");
@@ -178,6 +181,7 @@ function renderUsage(r) {
 async function refresh() {
   if (!current) return;
   const r = await api(`/investigations/${current}`);
+  if (r.scenario && scenarios.some((s) => s.name === r.scenario)) $("scenario").value = r.scenario;
   const cls = r.status === "failed" ? "failed" : "";
   $("status").innerHTML = `<span class="pill ${cls}">${esc(r.status)}</span> ${r.error ? esc(r.error) : ""}`;
   $("resume").disabled = r.status !== "failed";

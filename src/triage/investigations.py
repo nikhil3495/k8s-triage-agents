@@ -55,6 +55,11 @@ class InvestigationService:
         """Build the agent tree and runner for this runtime."""
         self.rt = rt
         self.telemetry = TelemetryPlugin()
+        if models is None and rt.settings.llm_backend == "baseline":
+            from triage.agents.baseline import BaselineLlm
+
+            llm = BaselineLlm()
+            models = Models(supervisor=llm, worker=llm, critic=llm)
         app = App(
             name=APP_NAME,
             root_agent=build_root_agent(rt.settings, models),

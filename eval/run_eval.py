@@ -49,7 +49,7 @@ def _models(kind: str, settings: Settings) -> Models | None:
             os.environ.setdefault("GOOGLE_API_KEY", settings.gemini_api_key.get_secret_value())
         return None  # use SUPERVISOR_MODEL / WORKER_MODEL / CRITIC_MODEL
     if kind in ("baseline", "scripted"):
-        from eval.baseline import BaselineLlm
+        from triage.agents.baseline import BaselineLlm
 
         llm = BaselineLlm()
         return Models(supervisor=llm, worker=llm, critic=llm)

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from eval.baseline import classify
 from eval.harness import load_scenarios
 from eval.scoring import aggregate, score
+
+from triage.agents.baseline import classify
 
 EXPECTED = {
     "category": "oom",
