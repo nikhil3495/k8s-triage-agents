@@ -64,3 +64,30 @@ def record_critic_verdict(callback_context: CallbackContext) -> types.Content | 
     callback_context.state[state_keys.CRITIC_HISTORY] = history
     callback_context.state[state_keys.CRITIC_ROUND] = rnd
     return record_checkpoint(callback_context)
+
+
+def ensure_session_defaults(callback_context: CallbackContext) -> types.Content | None:
+    """before_agent_callback on the root: fill state for sessions not created by the API.
+
+    ``adk web`` / ``adk run`` start with empty state; default to the configured
+    replay scenario and take the symptom from the user's first message.
+    """
+    from triage.config import ClusterMode, get_settings
+    from triage.k8s.replay import ReplayClusterClient
+
+    state = callback_context.state
+    if state.get(state_keys.NAMESPACE):
+        return None
+    settings = get_settings()
+    state[state_keys.CLUSTER_MODE] = str(settings.cluster_mode)
+    if settings.cluster_mode == ClusterMode.REPLAY:
+        scenario = state.get(state_keys.SCENARIO) or settings.default_scenario
+        reader = ReplayClusterClient.from_scenario(settings.replay_fixtures_dir, scenario)
+        state[state_keys.SCENARIO] = scenario
+        state[state_keys.NAMESPACE] = reader.namespace
+    else:
+        state[state_keys.NAMESPACE] = "default"
+    user = callback_context.user_content
+    text = " ".join(p.text or "" for p in (user.parts or [])) if user else ""
+    state[state_keys.SYMPTOM] = text.strip() or "unspecified symptom"
+    return None

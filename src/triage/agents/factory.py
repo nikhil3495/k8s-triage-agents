@@ -35,7 +35,12 @@ from triage import state_keys
 from triage.agents import prompts
 from triage.agents.schemas import CriticVerdict, RootCauseHypothesis
 from triage.config import Settings
-from triage.sessions.checkpoints import make_tool_budget, record_checkpoint, record_critic_verdict
+from triage.sessions.checkpoints import (
+    ensure_session_defaults,
+    make_tool_budget,
+    record_checkpoint,
+    record_critic_verdict,
+)
 from triage.telemetry import metrics
 from triage.tools.cluster_tools import (
     LOG_TOOLS,
@@ -184,4 +189,5 @@ def build_root_agent(settings: Settings, models: Models | None = None) -> LoopAg
         description="Supervisor -> Critic loop; ends on PASS or after max critic rounds.",
         sub_agents=[supervisor, critic, VerdictGate(name=GATE)],
         max_iterations=settings.max_critic_rounds,
+        before_agent_callback=ensure_session_defaults,
     )
