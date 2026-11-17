@@ -1,0 +1,38 @@
+# Separate identity for the HITL executor (LiveClusterWriter). It is used ONLY
+# after a human approves a PendingAction. Bind it per application namespace;
+# it can patch/scale Deployments and read ReplicaSets (for rollback) - nothing else.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: triage-remediator
+  namespace: triage-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: triage-remediator
+  namespace: shop   # one Role + RoleBinding per namespace you allow remediation in
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, patch]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get, patch]
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triage-remediator
+  namespace: shop
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: triage-remediator
+subjects:
+  - kind: ServiceAccount
+    name: triage-remediator
+    namespace: triage-system

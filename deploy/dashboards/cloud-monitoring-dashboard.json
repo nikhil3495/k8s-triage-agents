@@ -1,0 +1,68 @@
+{
+  "displayName": "k8s-triage-agents",
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
+      {
+        "width": 6, "height": 4,
+        "widget": {
+          "title": "Investigation latency p50 / p95 (ms)",
+          "xyChart": {
+            "dataSets": [
+              {"timeSeriesQuery": {"timeSeriesFilter": {
+                "filter": "metric.type=\"workload.googleapis.com/triage.request.latency\"",
+                "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_DELTA", "crossSeriesReducer": "REDUCE_PERCENTILE_50"}}},
+               "plotType": "LINE", "legendTemplate": "p50"},
+              {"timeSeriesQuery": {"timeSeriesFilter": {
+                "filter": "metric.type=\"workload.googleapis.com/triage.request.latency\"",
+                "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_DELTA", "crossSeriesReducer": "REDUCE_PERCENTILE_95"}}},
+               "plotType": "LINE", "legendTemplate": "p95"}
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 6, "width": 6, "height": 4,
+        "widget": {
+          "title": "Cost per investigation (USD, mean)",
+          "xyChart": {"dataSets": [{"timeSeriesQuery": {"timeSeriesFilter": {
+            "filter": "metric.type=\"workload.googleapis.com/triage.request.cost\"",
+            "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_DELTA", "crossSeriesReducer": "REDUCE_MEAN"}}},
+            "plotType": "LINE"}]}
+        }
+      },
+      {
+        "yPos": 4, "width": 6, "height": 4,
+        "widget": {
+          "title": "Output tokens/sec by agent (p50)",
+          "xyChart": {"dataSets": [{"timeSeriesQuery": {"timeSeriesFilter": {
+            "filter": "metric.type=\"workload.googleapis.com/triage.llm.tokens_per_sec\"",
+            "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_DELTA",
+              "crossSeriesReducer": "REDUCE_PERCENTILE_50", "groupByFields": ["metric.label.\"agent_name\""]}}},
+            "plotType": "LINE"}]}
+        }
+      },
+      {
+        "xPos": 6, "yPos": 4, "width": 6, "height": 4,
+        "widget": {
+          "title": "Critic verdicts (PASS vs REVISE)",
+          "xyChart": {"dataSets": [{"timeSeriesQuery": {"timeSeriesFilter": {
+            "filter": "metric.type=\"workload.googleapis.com/triage.critic.verdicts\"",
+            "aggregation": {"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_DELTA",
+              "crossSeriesReducer": "REDUCE_SUM", "groupByFields": ["metric.label.\"verdict\""]}}},
+            "plotType": "STACKED_BAR"}]}
+        }
+      },
+      {
+        "yPos": 8, "width": 12, "height": 4,
+        "widget": {
+          "title": "Remediation approval wait (s, p50)",
+          "xyChart": {"dataSets": [{"timeSeriesQuery": {"timeSeriesFilter": {
+            "filter": "metric.type=\"workload.googleapis.com/triage.approval.wait\"",
+            "aggregation": {"alignmentPeriod": "3600s", "perSeriesAligner": "ALIGN_DELTA", "crossSeriesReducer": "REDUCE_PERCENTILE_50"}}},
+            "plotType": "LINE"}]}
+        }
+      }
+    ]
+  }
+}
