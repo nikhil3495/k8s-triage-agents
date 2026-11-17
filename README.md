@@ -3,6 +3,7 @@
 **A supervisor agent built with Google's Agent Development Kit (ADK) and Gemini investigates a broken Kubernetes namespace. It delegates to log, metrics and runbook-retrieval specialists, has a self-reflection critic check the root cause, and queues fixes for human approval. Every step is traced with OpenTelemetry.**
 
 [![ci](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/ci.yml)
+[![eval](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/eval.yml/badge.svg)](https://github.com/nikhil3495/k8s-triage-agents/actions/workflows/eval.yml)
 ![coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)
 ![tests](https://img.shields.io/badge/tests-83%20passing-brightgreen)
 ![eval baseline](https://img.shields.io/badge/eval%20(baseline%2C%20kind)-8%2F8-brightgreen)
@@ -12,7 +13,7 @@
 ![python](https://img.shields.io/badge/python-3.12-blue)
 ![google-adk](https://img.shields.io/badge/google--adk-2.14.1-4285F4)
 
-> **Runs fully offline.** Nothing is hosted: clone it and run it locally with Docker or `uv`. No GCP account is needed, and no API key either (the offline `baseline` backend). Cloud Run deployment is optional and scripted, but not deployed. The `ci` badge is live from GitHub Actions; coverage, test and eval badges come from the runs recorded in [STATUS.md](STATUS.md).
+> **Runs fully offline.** Nothing is hosted: clone it and run it locally with Docker or `uv`. No GCP account is needed, and no API key either (the offline `baseline` backend). Cloud Run deployment is optional and scripted, but not deployed. The `ci` and `eval` badges are live from GitHub Actions; coverage, test and eval badges come from the runs recorded in [STATUS.md](STATUS.md).
 
 ## Run locally
 **1. Docker Compose: API + UI + Jaeger, no key needed**
@@ -101,6 +102,7 @@ Recorded `oom-killed` incident (fixture captured from kind). These are the actua
 | Run (2026-11-17) | Model | Cluster | Root-cause acc. | Evidence recall | Runbook hit@3 | Critic agreement | p50 latency |
 |---|---|---|---|---|---|---|---|
 | [live-kind-baseline](eval/results/live-kind-baseline.md) | rule-based baseline | **live kind v1.33.1, faults injected** | 8/8 | 0.917 | 1.00 | 1.00 | 1.14 s |
+| [CI kind (GitHub Actions), baseline](https://github.com/nikhil3495/k8s-triage-agents/actions/runs/44169113577) (2026-11-18) | rule-based baseline | **fresh kind cluster on the runner, faults injected** | 8/8 | 0.917 | 1.00 | 1.00 | 0.17 s |
 | [offline-baseline](eval/results/offline-baseline.md) | rule-based baseline | recorded fixtures | 8/8 | 0.917 | 1.00 | 1.00 | 1.10 s |
 | Gemini (replay and live) | gemini-3.8-flash + 3.1-flash-lite | both | **pending** | pending | pending | pending | pending |
 

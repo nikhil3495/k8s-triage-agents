@@ -33,12 +33,13 @@
 | Cloud Run | `scripts/deploy.sh`, `Dockerfile` (built and smoke-tested locally), manual `deploy.yml` | 🟡 deploy-ready, not live (not deployed by choice) |
 | Per-agent tokens/sec, cost per request, latency | span attributes `llm.tokens_per_sec`, `llm.cost_usd`, `latency_ms`; per-agent `usage` + `cost_usd` in the API response; `GET /metrics/summary`; `tests/unit/test_agent_flow.py` asserts cost > 0 and per-agent rollup | ✅ (real Gemini dollar figures pending) |
 | Eval suite replays injected faults on a test cluster | `eval/` 8 scenarios, `eval/run_eval.py --mode live` ran on kind v1.33.1: **8/8** with the baseline model; fixtures recorded from kind (`eval/fixtures/`) | ✅ pipeline / ⏳ Gemini accuracy |
-| Checks accuracy before each release | `.github/workflows/eval.yml` (tag/release/dispatch, gate ≥ 0.75); `ci.yml` runs the offline eval on every push | ✅ enabled / ⏳ release gate not yet run (defaults to Gemini, needs key) |
+| Checks accuracy before each release | `.github/workflows/eval.yml` (tag/release/dispatch, gate ≥ 0.75); `ci.yml` runs the offline eval on every push | ✅ enabled; gate run on GitHub Actions with the baseline: [PASS 8/8](https://github.com/nikhil3495/k8s-triage-agents/actions/runs/44169113577) / ⏳ Gemini gate needs key |
 
-## Eval numbers (real runs, 2026-11-17)
+## Eval numbers (real runs, 2026-11-17/18)
 | Run | Model | Accuracy | Evidence recall | Runbook hit@3 | Critic agreement | p50 latency |
 |---|---|---|---|---|---|---|
 | live kind | rule-based baseline | 1.00 | 0.917 | 1.00 | 1.00 | 1.14 s |
+| [CI kind (GitHub Actions)](https://github.com/nikhil3495/k8s-triage-agents/actions/runs/44169113577), 2026-11-18, gate PASS | rule-based baseline | 1.00 | 0.917 | 1.00 | 1.00 | 0.17 s |
 | replay fixtures | rule-based baseline | 1.00 | 0.917 | 1.00 | 1.00 | 1.10 s |
 | replay / live kind | Gemini | pending | pending | pending | pending | pending |
 
@@ -49,7 +50,7 @@ Quality: 83 tests passing, 95.7% coverage, `ruff` clean, `mypy --strict` clean, 
 ## CI status
 The `gh` token now has the `workflow` scope, so the workflows moved from `deploy/github-workflows/` to `.github/workflows/` (DECISIONS D11).
 - `ci.yml` (push/PR): ruff, mypy, pytest + coverage, offline eval, gitleaks, pip-audit, Docker build. **Green** on `main`.
-- `eval.yml` (tags/releases/dispatch): kind release gate. Not run yet; with `model=gemini` it needs the `GEMINI_API_KEY` repo secret. `gh workflow run eval.yml -f model=baseline` runs it without one.
+- `eval.yml` (tags/releases/dispatch): kind release gate. Ran with `model=baseline` on 2026-11-18: **PASS**, 8/8, in 4m06s (https://github.com/nikhil3495/k8s-triage-agents/actions/runs/44169113577). With `model=gemini` (the default for tags) it needs the `GEMINI_API_KEY` repo secret.
 - `deploy.yml`: `workflow_dispatch` only, optional, and skips itself unless `GCP_PROJECT` is set.
 
 ## Secrets file
