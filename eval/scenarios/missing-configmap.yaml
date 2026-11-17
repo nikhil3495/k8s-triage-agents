@@ -1,0 +1,24 @@
+name: missing-configmap
+description: The deployment references a ConfigMap that was never created in this namespace.
+symptom: "new checkout pods are stuck and never start"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 1
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: nginx:1.27-alpine
+          envFrom:
+          - configMapRef: {name: checkout-config}
+wait_for: {pod_reason: [CreateContainerConfigError], timeout_s: 120}
+expected:
+  category: missing_config
+  evidence_keywords: [CreateContainerConfigError, checkout-config, not found]
+  runbook: missing-configmap-secret
+  remediation: null

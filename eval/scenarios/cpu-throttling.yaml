@@ -1,0 +1,27 @@
+name: cpu-throttling
+description: A CPU limit far below demand pins the container at its limit, causing throttling and high latency.
+symptom: "checkout p99 latency jumped from 80ms to 2s, no errors in the logs"
+needs_metrics_server: true
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 1
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: busybox:1.36
+          command: ["sh", "-c", "echo checkout worker started; while true; do :; done"]
+          resources:
+            requests: {cpu: 20m, memory: 16Mi}
+            limits: {cpu: 50m, memory: 64Mi}
+wait_for: {pod_metrics: true, deployment_ready: checkout, timeout_s: 240}
+expected:
+  category: cpu_throttling
+  evidence_keywords: [cpu_pct_of_limit, 50m, throttl]
+  runbook: cpu-throttling-high-latency
+  remediation: patch_resources

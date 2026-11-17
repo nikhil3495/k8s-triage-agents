@@ -1,0 +1,26 @@
+name: oom-killed
+description: Memory limit far below the working set; the container is OOM-killed on every start.
+symptom: "checkout keeps restarting and requests intermittently fail"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 1
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'loading product catalog into memory'; tail /dev/zero"]
+          resources:
+            requests: {memory: 32Mi, cpu: 50m}
+            limits: {memory: 48Mi, cpu: 200m}
+wait_for: {pod_reason: [OOMKilled, CrashLoopBackOff], min_restarts: 1, timeout_s: 180}
+expected:
+  category: oom
+  evidence_keywords: [OOMKilled, "137", 48Mi]
+  runbook: oomkilled
+  remediation: patch_resources

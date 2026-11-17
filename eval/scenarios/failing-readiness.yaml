@@ -1,0 +1,27 @@
+name: failing-readiness
+description: Readiness probe points at a path the app does not serve, so pods never become Ready.
+symptom: "checkout has no ready replicas, the load balancer returns 503"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 2
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports: [{containerPort: 80}]
+          readinessProbe:
+            httpGet: {path: /healthz, port: 80}
+            periodSeconds: 3
+            failureThreshold: 1
+wait_for: {event_reason: Unhealthy, timeout_s: 120}
+expected:
+  category: readiness_probe
+  evidence_keywords: [Readiness probe failed, "404", /healthz]
+  runbook: readiness-probe-failure
+  remediation: rollback_deployment

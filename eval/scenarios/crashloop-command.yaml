@@ -1,0 +1,26 @@
+name: crashloop-command
+description: The container command exits immediately because a required config file is missing.
+symptom: "checkout service is down, pods keep restarting"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 1
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: busybox:1.36
+          command:
+          - sh
+          - -c
+          - echo "starting checkout v2.3.1"; echo "FATAL open /etc/checkout/config.yaml no such file or directory" 1>&2; exit 1
+wait_for: {pod_reason: [CrashLoopBackOff, Error], min_restarts: 2, timeout_s: 180}
+expected:
+  category: crashloop
+  evidence_keywords: [CrashLoopBackOff, "config.yaml", "exit"]
+  runbook: crashloopbackoff
+  remediation: rollback_deployment

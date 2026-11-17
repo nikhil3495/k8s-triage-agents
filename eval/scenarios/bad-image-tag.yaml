@@ -1,0 +1,23 @@
+name: bad-image-tag
+description: A release pushed an image tag that does not exist in the registry.
+symptom: "checkout pods are not starting after the latest deploy"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 2
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: nginx:1.27.99-doesnotexist
+          ports: [{containerPort: 80}]
+wait_for: {pod_reason: [ImagePullBackOff, ErrImagePull], timeout_s: 180}
+expected:
+  category: image_pull
+  evidence_keywords: [ImagePullBackOff, "1.27.99-doesnotexist"]
+  runbook: imagepullbackoff
+  remediation: rollback_deployment

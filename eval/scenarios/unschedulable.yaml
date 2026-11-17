@@ -1,0 +1,24 @@
+name: unschedulable
+description: CPU request larger than any node can provide; pods stay Pending.
+symptom: "checkout scale-up never completes, new pods stay pending"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 1
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: nginx:1.27-alpine
+          resources:
+            requests: {cpu: "64", memory: 64Mi}
+wait_for: {event_reason: FailedScheduling, timeout_s: 120}
+expected:
+  category: unschedulable
+  evidence_keywords: [FailedScheduling, Insufficient cpu, Pending]
+  runbook: pending-pods-insufficient-resources
+  remediation: patch_resources

@@ -1,0 +1,30 @@
+name: broken-service-selector
+description: The Service selector was changed and no longer matches the pod labels, so it has no endpoints.
+symptom: "calls to the checkout service fail with connection refused even though pods look healthy"
+fault_manifest: |
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata: {name: checkout, labels: {app: checkout}}
+  spec:
+    replicas: 2
+    selector: {matchLabels: {app: checkout}}
+    template:
+      metadata: {labels: {app: checkout}}
+      spec:
+        containers:
+        - name: web
+          image: nginx:1.27-alpine
+          ports: [{containerPort: 80}]
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata: {name: checkout}
+  spec:
+    selector: {app: checkout-v2}
+    ports: [{port: 80, targetPort: 80}]
+wait_for: {deployment_ready: checkout, timeout_s: 120}
+expected:
+  category: service_selector
+  evidence_keywords: [checkout-v2, "endpoints", selector]
+  runbook: service-no-endpoints
+  remediation: null

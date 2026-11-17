@@ -1,0 +1,24 @@
+# Healthy baseline applied to every eval namespace before the fault is injected.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: checkout, labels: {app: checkout}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: checkout}}
+  template:
+    metadata: {labels: {app: checkout}}
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.27-alpine
+        ports: [{containerPort: 80}]
+        resources:
+          requests: {cpu: 20m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: checkout}
+spec:
+  selector: {app: checkout}
+  ports: [{port: 80, targetPort: 80}]
