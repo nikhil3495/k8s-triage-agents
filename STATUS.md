@@ -1,8 +1,9 @@
 # Status: 2026-11-18
 
 **Repo:** https://github.com/nikhil3495/k8s-triage-agents (public, `main`)
-**Live URL:** **not deployed.** Hard limit hit (billing). At the start of the run `gcloud` had no credentialed account. By the end an account was logged in, but **neither visible project has billing enabled**: `sapient-office-450913-b7` is linked to a billing account but reports `billingEnabled: False`, and `red-parity-450913-r4` has no billing account. Cloud Run, Artifact Registry and Secret Manager require billing, and changing billing is outside what this run was allowed to do.
-**Gemini:** no `GEMINI_API_KEY` was available, so no live Gemini call has been made. Everything Gemini-dependent is marked *pending* below and in the README.
+**Deployment:** **Not deployed by choice; runs fully offline.** There is no hosted URL. Run it locally with `docker compose up --build` (API + UI + Jaeger) or `uv run`; see README "Run locally". Cloud Run (`scripts/deploy.sh`) and Cloud Trace are **deploy-ready, not live**. No GCP resource was created.
+**Gemini:** no `GEMINI_API_KEY` was available, so no live Gemini call has been made. Everything Gemini-dependent is marked *pending*. The offline `LLM_BACKEND=baseline` mode runs the whole graph without a key.
+**CI:** GitHub Actions is enabled (`.github/workflows/`). The first `ci` run on `main` was green (test, security, docker) on 2026-11-18. `deploy.yml` is manual-only.
 
 ## Resume claims → proof
 
@@ -28,10 +29,11 @@
 | Claim | Proof | Status |
 |---|---|---|
 | OpenTelemetry tracing | `telemetry/setup.py`, `telemetry/plugin.py`; 85-span trace in `docs/img/trace-waterfall-jaeger.png` | ✅ |
-| Cloud Trace | `CloudTraceSpanExporter` (`TRACE_EXPORTER=gcp`), set by `scripts/deploy.sh` | ⏳ wired, not yet exercised (no GCP auth); no Cloud Trace screenshot yet |
+| Cloud Trace | `CloudTraceSpanExporter` (`TRACE_EXPORTER=gcp`), set by `scripts/deploy.sh` | 🟡 deploy-ready, not live (same spans proven via OTLP → Jaeger) |
+| Cloud Run | `scripts/deploy.sh`, `Dockerfile` (built and smoke-tested locally), manual `deploy.yml` | 🟡 deploy-ready, not live (not deployed by choice) |
 | Per-agent tokens/sec, cost per request, latency | span attributes `llm.tokens_per_sec`, `llm.cost_usd`, `latency_ms`; per-agent `usage` + `cost_usd` in the API response; `GET /metrics/summary`; `tests/unit/test_agent_flow.py` asserts cost > 0 and per-agent rollup | ✅ (real Gemini dollar figures pending) |
 | Eval suite replays injected faults on a test cluster | `eval/` 8 scenarios, `eval/run_eval.py --mode live` ran on kind v1.33.1: **8/8** with the baseline model; fixtures recorded from kind (`eval/fixtures/`) | ✅ pipeline / ⏳ Gemini accuracy |
-| Checks accuracy before each release | `deploy/github-workflows/eval.yml` (tag/release/dispatch, gate ≥ 0.75) | ⏳ workflows not yet enabled on GitHub (see below) |
+| Checks accuracy before each release | `.github/workflows/eval.yml` (tag/release/dispatch, gate ≥ 0.75); `ci.yml` runs the offline eval on every push | ✅ enabled / ⏳ release gate not yet run (defaults to Gemini, needs key) |
 
 ## Eval numbers (real runs, 2026-11-17)
 | Run | Model | Accuracy | Evidence recall | Runbook hit@3 | Critic agreement | p50 latency |
@@ -45,38 +47,25 @@ The baseline is deterministic rules that know these fault types. These rows vali
 Quality: 83 tests passing, 95.7% coverage, `ruff` clean, `mypy --strict` clean, Docker image built and smoke-tested locally (non-root, `/healthz`, an `oom-killed` investigation completed).
 
 ## CI status
-No GitHub Actions have run yet. The `gh` token has scopes `gist, read:org, repo, user` but **not `workflow`**, so GitHub rejects pushes to `.github/workflows/`. The three workflows are committed at `deploy/github-workflows/{ci,eval,deploy}.yml` (DECISIONS D11).
+The `gh` token now has the `workflow` scope, so the workflows moved from `deploy/github-workflows/` to `.github/workflows/` (DECISIONS D11).
+- `ci.yml` (push/PR): ruff, mypy, pytest + coverage, offline eval, gitleaks, pip-audit, Docker build. **Green** on `main`.
+- `eval.yml` (tags/releases/dispatch): kind release gate. Not run yet; with `model=gemini` it needs the `GEMINI_API_KEY` repo secret. `gh workflow run eval.yml -f model=baseline` runs it without one.
+- `deploy.yml`: `workflow_dispatch` only, optional, and skips itself unless `GCP_PROJECT` is set.
 
 ## Secrets file
-`~/k8s-triage-agents-secrets.txt` **does not exist yet**. `scripts/deploy.sh` creates it (mode 600, outside the repo) with a generated `TRIAGE_API_KEY` and `APPROVER_TOKEN`, then appends the service URL and session store. No secrets exist in the repo; `scripts/secret_scan.py` reported 0 findings before each push.
+`~/k8s-triage-agents-secrets.txt` does not exist; it is only created by `scripts/deploy.sh`, which has not been run. No secrets exist in the repo: `scripts/secret_scan.py` reported 0 findings before each push, and gitleaks runs in CI.
 
-## What's left: exact next commands
-1. **Enable CI/eval/deploy workflows** (2 min):
-   ```bash
-   gh auth refresh -h github.com -s workflow
-   cd ~/projects/k8s-triage-agents   # Windows: C:\Users\nikhil\projects\k8s-triage-agents
-   mkdir -p .github && git mv deploy/github-workflows .github/workflows
-   sed -i 's#deploy/github-workflows/#.github/workflows/#g' README.md STATUS.md docs/*.md
-   git commit -am "ci: enable GitHub Actions workflows" && git push
-   ```
-2. **Gemini key** (get one at https://aistudio.google.com/apikey):
+## Optional next steps
+1. **Gemini numbers** (key from https://aistudio.google.com/apikey):
    ```bash
    export GEMINI_API_KEY=...
-   gh secret set GEMINI_API_KEY --body "$GEMINI_API_KEY" --repo nikhil3495/k8s-triage-agents
    uv run python scripts/list_models.py          # confirm the default model ids exist
    uv run python -m eval.run_eval --mode replay --model gemini --out eval/results/replay-gemini.json
+   gh secret set GEMINI_API_KEY --repo nikhil3495/k8s-triage-agents   # enables the Gemini release gate
    ```
    Then replace the "pending" rows in README.md / docs/EVAL.md with `eval/results/replay-gemini.md`.
-3. **Deploy to Cloud Run** (enable billing first, then one command):
-   ```bash
-   # check why billing is off (closed/suspended account?) in the console, or re-link it:
-   #   gcloud billing projects link sapient-office-450913-b7 --billing-account=01B2C2-B610E1-474EDF
-   gcloud config set project sapient-office-450913-b7
-   GEMINI_API_KEY=... ./scripts/deploy.sh       # enables APIs, AR repo, secrets, SA, Agent Engine session store, Cloud Build, Cloud Run, smoke test
-   ```
-   Then put the URL in the README "Live demo" line and add a Cloud Trace screenshot (Trace explorer → filter `triage.investigation`).
-4. **CI-based deploys (optional):** `./scripts/setup_wif.sh` (creates the WIF pool/provider/deployer SA and sets the repo variables). After that, every push to `main` deploys.
-5. **Release gate on real kind + Gemini:** `git tag v0.1.0 && git push --tags` (runs `eval.yml`), or `gh workflow run eval.yml`.
+2. **Release gate:** `git tag v0.1.0 && git push --tags` (runs `eval.yml` on kind).
+3. **Cloud Run (optional, needs a billing-enabled project):** `gcloud config set project <id> && GEMINI_API_KEY=... ./scripts/deploy.sh`. For CI deploys, run `./scripts/setup_wif.sh`, then trigger `deploy.yml` manually.
 
 ## Local leftovers from the build
 - The kind cluster and Jaeger container were deleted at the end of the run. The image `k8s-triage-agents:local` remains in WSL Docker (`wsl -e docker rmi k8s-triage-agents:local`).

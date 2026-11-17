@@ -24,7 +24,7 @@ Tests enforcing this: `tests/unit/test_hitl.py` (token, reject, expiry, double-a
 - Logs are tail-limited (100 lines / 4000 chars).
 - Tool outputs are capped at 50 items.
 
-## Public demo
+## If deployed publicly (optional; not deployed)
 `--allow-unauthenticated` exposes the UI and read endpoints. Write endpoints still need the API key, and approvals need the approver token. The demo runs in replay mode with a **simulated** writer, so approving there changes no cluster. A per-instance rate limit (20 investigations per hour), `max_llm_calls`, tool budgets and `max-instances=2` bound spend.
 
 ## Known gaps
