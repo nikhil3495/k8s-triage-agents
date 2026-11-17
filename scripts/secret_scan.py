@@ -18,12 +18,15 @@ PATTERNS = {
 def main() -> int:
     files = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.split()
     hits = []
     for f in files:
         try:
-            text = open(f, encoding="utf-8", errors="ignore").read()
+            with open(f, encoding="utf-8", errors="ignore") as fh:
+                text = fh.read()
         except (IsADirectoryError, FileNotFoundError):
             continue
         for name, rx in PATTERNS.items():
