@@ -1,0 +1,323 @@
+{
+ "captured_at": "2026-11-17T18:25:39.797285+00:00",
+ "deployments": [
+  {
+   "conditions": [
+    {
+     "message": "ReplicaSet \"checkout-78bc7c666\" has successfully progressed.",
+     "reason": "NewReplicaSetAvailable",
+     "status": "True",
+     "type": "Progressing"
+    },
+    {
+     "message": "Deployment does not have minimum availability.",
+     "reason": "MinimumReplicasUnavailable",
+     "status": "False",
+     "type": "Available"
+    }
+   ],
+   "containers": [
+    {
+     "image": "busybox:1.36",
+     "name": "web",
+     "resources": {
+      "limits": {
+       "cpu": "200m",
+       "memory": "48Mi"
+      },
+      "requests": {
+       "cpu": "50m",
+       "memory": "32Mi"
+      }
+     }
+    }
+   ],
+   "name": "checkout",
+   "ready_replicas": 0,
+   "replicas": 1,
+   "revision": "2",
+   "selector": {
+    "app": "checkout"
+   },
+   "unavailable_replicas": 1,
+   "updated_replicas": 1
+  }
+ ],
+ "events": [
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:20+00:00",
+   "message": "Successfully assigned eval-oom-killed/checkout-54b7877dcb-n6t98 to triage-eval-control-plane",
+   "object": "Pod/checkout-54b7877dcb-n6t98",
+   "reason": "Scheduled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:21+00:00",
+   "message": "Container image \"nginx:1.27-alpine\" already present on machine",
+   "object": "Pod/checkout-54b7877dcb-n6t98",
+   "reason": "Pulled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:21+00:00",
+   "message": "Created container: web",
+   "object": "Pod/checkout-54b7877dcb-n6t98",
+   "reason": "Created",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:21+00:00",
+   "message": "Started container web",
+   "object": "Pod/checkout-54b7877dcb-n6t98",
+   "reason": "Started",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:24+00:00",
+   "message": "Stopping container web",
+   "object": "Pod/checkout-54b7877dcb-n6t98",
+   "reason": "Killing",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:20+00:00",
+   "message": "Created pod: checkout-54b7877dcb-n6t98",
+   "object": "ReplicaSet/checkout-54b7877dcb",
+   "reason": "SuccessfulCreate",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:24+00:00",
+   "message": "Deleted pod: checkout-54b7877dcb-n6t98",
+   "object": "ReplicaSet/checkout-54b7877dcb",
+   "reason": "SuccessfulDelete",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:23+00:00",
+   "message": "Successfully assigned eval-oom-killed/checkout-78bc7c666-lxrc4 to triage-eval-control-plane",
+   "object": "Pod/checkout-78bc7c666-lxrc4",
+   "reason": "Scheduled",
+   "type": "Normal"
+  },
+  {
+   "count": 2,
+   "last_seen": "2026-11-17T18:25:25+00:00",
+   "message": "Container image \"busybox:1.36\" already present on machine",
+   "object": "Pod/checkout-78bc7c666-lxrc4",
+   "reason": "Pulled",
+   "type": "Normal"
+  },
+  {
+   "count": 2,
+   "last_seen": "2026-11-17T18:25:25+00:00",
+   "message": "Created container: web",
+   "object": "Pod/checkout-78bc7c666-lxrc4",
+   "reason": "Created",
+   "type": "Normal"
+  },
+  {
+   "count": 2,
+   "last_seen": "2026-11-17T18:25:25+00:00",
+   "message": "Started container web",
+   "object": "Pod/checkout-78bc7c666-lxrc4",
+   "reason": "Started",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:27+00:00",
+   "message": "Back-off restarting failed container web in pod checkout-78bc7c666-lxrc4_eval-oom-killed(fc08ee16-8783-47b2-a8e6-483530abdc12)",
+   "object": "Pod/checkout-78bc7c666-lxrc4",
+   "reason": "BackOff",
+   "type": "Warning"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:23+00:00",
+   "message": "Created pod: checkout-78bc7c666-lxrc4",
+   "object": "ReplicaSet/checkout-78bc7c666",
+   "reason": "SuccessfulCreate",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:20+00:00",
+   "message": "Scaled up replica set checkout-54b7877dcb from 0 to 1",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:23+00:00",
+   "message": "Scaled up replica set checkout-78bc7c666 from 0 to 1",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:25:24+00:00",
+   "message": "Scaled down replica set checkout-54b7877dcb from 1 to 0",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  }
+ ],
+ "logs": {
+  "checkout-78bc7c666-lxrc4": {
+   "current": "loading product catalog into memory\n",
+   "previous": "unable to retrieve container logs for containerd://6bc841ff55a5a69157ab242daf5adcc0487157138616961856559fa0f9a453b3"
+  }
+ },
+ "namespace": "eval-oom-killed",
+ "node_metrics": [
+  {
+   "cpu_m": 434.4,
+   "memory_mib": 604.4,
+   "node": "triage-eval-control-plane"
+  }
+ ],
+ "nodes": [
+  {
+   "allocatable": {
+    "cpu": "2",
+    "ephemeral-storage": "1055762868Ki",
+    "hugepages-1Gi": "0",
+    "hugepages-2Mi": "0",
+    "memory": "7101544Ki",
+    "pods": "110"
+   },
+   "name": "triage-eval-control-plane",
+   "pressure": [],
+   "ready": "True",
+   "ready_reason": "KubeletReady",
+   "taints": []
+  }
+ ],
+ "pod_details": {
+  "checkout-78bc7c666-lxrc4": {
+   "conditions": [
+    {
+     "status": "True",
+     "type": "PodReadyToStartContainers"
+    },
+    {
+     "status": "True",
+     "type": "Initialized"
+    },
+    {
+     "message": "containers with unready status: [web]",
+     "reason": "ContainersNotReady",
+     "status": "False",
+     "type": "Ready"
+    },
+    {
+     "message": "containers with unready status: [web]",
+     "reason": "ContainersNotReady",
+     "status": "False",
+     "type": "ContainersReady"
+    },
+    {
+     "status": "True",
+     "type": "PodScheduled"
+    }
+   ],
+   "containers": [
+    {
+     "args": null,
+     "command": [
+      "sh",
+      "-c",
+      "echo 'loading product catalog into memory'; tail /dev/zero"
+     ],
+     "env": [],
+     "env_from": null,
+     "image": "busybox:1.36",
+     "last_state": {
+      "exit_code": 137,
+      "reason": "OOMKilled",
+      "state": "terminated"
+     },
+     "liveness_probe": null,
+     "name": "web",
+     "readiness_probe": null,
+     "ready": false,
+     "resources": {
+      "limits": {
+       "cpu": "200m",
+       "memory": "48Mi"
+      },
+      "requests": {
+       "cpu": "50m",
+       "memory": "32Mi"
+      }
+     },
+     "restart_count": 1,
+     "state": {
+      "exit_code": 137,
+      "reason": "OOMKilled",
+      "state": "terminated"
+     }
+    }
+   ],
+   "labels": {
+    "app": "checkout",
+    "pod-template-hash": "78bc7c666"
+   },
+   "name": "checkout-78bc7c666-lxrc4",
+   "namespace": "eval-oom-killed",
+   "node": "triage-eval-control-plane",
+   "phase": "Running",
+   "volumes": [
+    "kube-api-access-hc6c7"
+   ]
+  }
+ },
+ "pod_metrics": [],
+ "pods": [
+  {
+   "labels": {
+    "app": "checkout",
+    "pod-template-hash": "78bc7c666"
+   },
+   "name": "checkout-78bc7c666-lxrc4",
+   "node": "triage-eval-control-plane",
+   "owner": "checkout-78bc7c666",
+   "phase": "Running",
+   "ready": "0/1",
+   "reason": "OOMKilled",
+   "restarts": 1
+  }
+ ],
+ "scenario": "oom-killed",
+ "services": [
+  {
+   "name": "checkout",
+   "not_ready_endpoints": 1,
+   "ports": [
+    {
+     "port": 80,
+     "protocol": "TCP",
+     "targetPort": 80
+    }
+   ],
+   "ready_endpoints": 0,
+   "selector": {
+    "app": "checkout"
+   },
+   "type": "ClusterIP"
+  }
+ ],
+ "source": "live-kind",
+ "symptom": "checkout keeps restarting and requests intermittently fail"
+}

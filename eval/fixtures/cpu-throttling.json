@@ -1,0 +1,326 @@
+{
+ "captured_at": "2026-11-17T18:24:04.764705+00:00",
+ "deployments": [
+  {
+   "conditions": [
+    {
+     "message": "Deployment has minimum availability.",
+     "reason": "MinimumReplicasAvailable",
+     "status": "True",
+     "type": "Available"
+    },
+    {
+     "message": "ReplicaSet \"checkout-5cc75f7f9c\" has successfully progressed.",
+     "reason": "NewReplicaSetAvailable",
+     "status": "True",
+     "type": "Progressing"
+    }
+   ],
+   "containers": [
+    {
+     "image": "busybox:1.36",
+     "name": "web",
+     "resources": {
+      "limits": {
+       "cpu": "50m",
+       "memory": "64Mi"
+      },
+      "requests": {
+       "cpu": "20m",
+       "memory": "16Mi"
+      }
+     }
+    }
+   ],
+   "name": "checkout",
+   "ready_replicas": 1,
+   "replicas": 1,
+   "revision": "2",
+   "selector": {
+    "app": "checkout"
+   },
+   "unavailable_replicas": 0,
+   "updated_replicas": 1
+  }
+ ],
+ "events": [
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:25+00:00",
+   "message": "Successfully assigned eval-cpu-throttling/checkout-54b7877dcb-qn472 to triage-eval-control-plane",
+   "object": "Pod/checkout-54b7877dcb-qn472",
+   "reason": "Scheduled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:26+00:00",
+   "message": "Container image \"nginx:1.27-alpine\" already present on machine",
+   "object": "Pod/checkout-54b7877dcb-qn472",
+   "reason": "Pulled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:26+00:00",
+   "message": "Created container: web",
+   "object": "Pod/checkout-54b7877dcb-qn472",
+   "reason": "Created",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:27+00:00",
+   "message": "Started container web",
+   "object": "Pod/checkout-54b7877dcb-qn472",
+   "reason": "Started",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:35+00:00",
+   "message": "Stopping container web",
+   "object": "Pod/checkout-54b7877dcb-qn472",
+   "reason": "Killing",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:25+00:00",
+   "message": "Created pod: checkout-54b7877dcb-qn472",
+   "object": "ReplicaSet/checkout-54b7877dcb",
+   "reason": "SuccessfulCreate",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:35+00:00",
+   "message": "Deleted pod: checkout-54b7877dcb-qn472",
+   "object": "ReplicaSet/checkout-54b7877dcb",
+   "reason": "SuccessfulDelete",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:28+00:00",
+   "message": "Successfully assigned eval-cpu-throttling/checkout-5cc75f7f9c-ctjvf to triage-eval-control-plane",
+   "object": "Pod/checkout-5cc75f7f9c-ctjvf",
+   "reason": "Scheduled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:29+00:00",
+   "message": "Pulling image \"busybox:1.36\"",
+   "object": "Pod/checkout-5cc75f7f9c-ctjvf",
+   "reason": "Pulling",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:34+00:00",
+   "message": "Successfully pulled image \"busybox:1.36\" in 5.12s (5.12s including waiting). Image size: 2217006 bytes.",
+   "object": "Pod/checkout-5cc75f7f9c-ctjvf",
+   "reason": "Pulled",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:34+00:00",
+   "message": "Created container: web",
+   "object": "Pod/checkout-5cc75f7f9c-ctjvf",
+   "reason": "Created",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:35+00:00",
+   "message": "Started container web",
+   "object": "Pod/checkout-5cc75f7f9c-ctjvf",
+   "reason": "Started",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:28+00:00",
+   "message": "Created pod: checkout-5cc75f7f9c-ctjvf",
+   "object": "ReplicaSet/checkout-5cc75f7f9c",
+   "reason": "SuccessfulCreate",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:25+00:00",
+   "message": "Scaled up replica set checkout-54b7877dcb from 0 to 1",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:28+00:00",
+   "message": "Scaled up replica set checkout-5cc75f7f9c from 0 to 1",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  },
+  {
+   "count": 1,
+   "last_seen": "2026-11-17T18:23:35+00:00",
+   "message": "Scaled down replica set checkout-54b7877dcb from 1 to 0",
+   "object": "Deployment/checkout",
+   "reason": "ScalingReplicaSet",
+   "type": "Normal"
+  }
+ ],
+ "logs": {
+  "checkout-5cc75f7f9c-ctjvf": {
+   "current": "checkout worker started\n",
+   "previous": "<no logs: 400 Bad Request>"
+  }
+ },
+ "namespace": "eval-cpu-throttling",
+ "node_metrics": [
+  {
+   "cpu_m": 375.7,
+   "memory_mib": 579.8,
+   "node": "triage-eval-control-plane"
+  }
+ ],
+ "nodes": [
+  {
+   "allocatable": {
+    "cpu": "2",
+    "ephemeral-storage": "1055762868Ki",
+    "hugepages-1Gi": "0",
+    "hugepages-2Mi": "0",
+    "memory": "7101544Ki",
+    "pods": "110"
+   },
+   "name": "triage-eval-control-plane",
+   "pressure": [],
+   "ready": "True",
+   "ready_reason": "KubeletReady",
+   "taints": []
+  }
+ ],
+ "pod_details": {
+  "checkout-5cc75f7f9c-ctjvf": {
+   "conditions": [
+    {
+     "status": "True",
+     "type": "PodReadyToStartContainers"
+    },
+    {
+     "status": "True",
+     "type": "Initialized"
+    },
+    {
+     "status": "True",
+     "type": "Ready"
+    },
+    {
+     "status": "True",
+     "type": "ContainersReady"
+    },
+    {
+     "status": "True",
+     "type": "PodScheduled"
+    }
+   ],
+   "containers": [
+    {
+     "args": null,
+     "command": [
+      "sh",
+      "-c",
+      "echo checkout worker started; while true; do :; done"
+     ],
+     "env": [],
+     "env_from": null,
+     "image": "busybox:1.36",
+     "last_state": {
+      "state": "unknown"
+     },
+     "liveness_probe": null,
+     "name": "web",
+     "readiness_probe": null,
+     "ready": true,
+     "resources": {
+      "limits": {
+       "cpu": "50m",
+       "memory": "64Mi"
+      },
+      "requests": {
+       "cpu": "20m",
+       "memory": "16Mi"
+      }
+     },
+     "restart_count": 0,
+     "state": {
+      "state": "running"
+     }
+    }
+   ],
+   "labels": {
+    "app": "checkout",
+    "pod-template-hash": "5cc75f7f9c"
+   },
+   "name": "checkout-5cc75f7f9c-ctjvf",
+   "namespace": "eval-cpu-throttling",
+   "node": "triage-eval-control-plane",
+   "phase": "Running",
+   "volumes": [
+    "kube-api-access-sq7r2"
+   ]
+  }
+ },
+ "pod_metrics": [
+  {
+   "containers": [
+    {
+     "cpu_m": 46.5,
+     "memory_mib": 0.4,
+     "name": "web"
+    }
+   ],
+   "pod": "checkout-5cc75f7f9c-ctjvf"
+  }
+ ],
+ "pods": [
+  {
+   "labels": {
+    "app": "checkout",
+    "pod-template-hash": "5cc75f7f9c"
+   },
+   "name": "checkout-5cc75f7f9c-ctjvf",
+   "node": "triage-eval-control-plane",
+   "owner": "checkout-5cc75f7f9c",
+   "phase": "Running",
+   "ready": "1/1",
+   "reason": null,
+   "restarts": 0
+  }
+ ],
+ "scenario": "cpu-throttling",
+ "services": [
+  {
+   "name": "checkout",
+   "not_ready_endpoints": 0,
+   "ports": [
+    {
+     "port": 80,
+     "protocol": "TCP",
+     "targetPort": 80
+    }
+   ],
+   "ready_endpoints": 1,
+   "selector": {
+    "app": "checkout"
+   },
+   "type": "ClusterIP"
+  }
+ ],
+ "source": "live-kind",
+ "symptom": "checkout p99 latency jumped from 80ms to 2s, no errors in the logs"
+}

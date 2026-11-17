@@ -89,7 +89,8 @@ def ensure_cluster(name: str = "triage-eval") -> None:
     clusters = kind("get", "clusters").split()
     if name not in clusters:
         kind("create", "cluster", "--name", name, "--wait", "120s")
-    kubectl("config", "use-context", f"kind-{name}")
+    if "KUBECTL" not in os.environ:
+        kubectl("config", "use-context", f"kind-{name}")
 
 
 def ensure_metrics_server() -> None:
