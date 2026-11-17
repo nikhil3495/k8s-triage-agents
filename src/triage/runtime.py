@@ -6,6 +6,7 @@ Built lazily from :class:`~triage.config.Settings`; tests replace pieces with
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -47,6 +48,10 @@ def _writer_factory(settings: Settings) -> ClusterWriter:
 def build_runtime(settings: Settings | None = None) -> Runtime:
     """Construct all services from settings."""
     s = settings or get_settings()
+    if s.gemini_api_key:
+        # google-genai reads the key from the process environment; .env values
+        # loaded by pydantic-settings are not exported automatically.
+        os.environ.setdefault("GOOGLE_API_KEY", s.gemini_api_key.get_secret_value())
     engine = make_engine(s.app_db_url)
     approvals = ApprovalService(
         engine,
