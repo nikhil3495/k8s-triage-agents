@@ -1,0 +1,22 @@
+# Local stack: the triage API (replay mode) + Jaeger for traces.
+#   cp .env.example .env   # add GEMINI_API_KEY
+#   docker compose up --build   ->  UI http://localhost:8080  traces http://localhost:16686
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      TRACE_EXPORTER: otlp
+      OTLP_ENDPOINT: http://jaeger:4318
+      SESSION_DB_URL: sqlite+aiosqlite:////data/sessions.db
+      APP_DB_URL: sqlite:////data/triage.db
+    ports: ["8080:8080"]
+    volumes: ["triage-data:/data"]
+    depends_on: [jaeger]
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: ["16686:16686", "4318:4318"]
+volumes:
+  triage-data:
