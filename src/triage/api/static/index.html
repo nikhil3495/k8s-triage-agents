@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K8s Incident Triage</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2330; --muted: #5f6b7a; --line: #e2e6eb;
+    --accent: #2f6fde; --ok: #1f8a4c; --warn: #b26a00; --bad: #c0362c; --code: #f0f2f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #11151b; --panel: #181e26; --ink: #e6eaf0; --muted: #98a3b1; --line: #2a323d;
+      --accent: #6b9cff; --ok: #4cc27f; --warn: #e3a33b; --bad: #f0675c; --code: #222a35; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 20px 24px 8px; max-width: 1200px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { max-width: 1200px; margin: 0 auto; padding: 12px 24px 48px; display: grid; gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px 40px; } header { padding: 16px 16px 4px; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; }
+  button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.danger { border-color: var(--bad); background: transparent; color: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; border: 1px solid var(--line); }
+  .pass { color: var(--ok); border-color: var(--ok); } .revise { color: var(--warn); border-color: var(--warn); }
+  .failed { color: var(--bad); border-color: var(--bad); }
+  #steps { max-height: 460px; overflow: auto; font-size: 13px; }
+  .step { border-left: 3px solid var(--line); padding: 4px 8px; margin: 4px 0; }
+  .step.tool { border-color: var(--accent); } .step.llm { border-color: var(--muted); }
+  .step b { font-weight: 600; }
+  code, pre { background: var(--code); border-radius: 4px; font: 12px/1.45 ui-monospace, Consolas, monospace; }
+  pre { padding: 8px; white-space: pre-wrap; word-break: break-word; margin: 6px 0; }
+  code { padding: 1px 4px; word-break: break-word; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 14px; }
+  .action { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 8px 0; }
+  .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kubernetes Incident Triage</h1>
+  <p>A supervisor agent delegates to log, metrics and runbook agents, and a critic checks the root cause before it is reported.
+     Remediations need human approval. <span id="mode" class="muted"></span></p>
+</header>
+<main>
+  <section>
+    <h2>Start an investigation</h2>
+    <label for="scenario">Recorded incident (replay mode)</label>
+    <select id="scenario"></select>
+    <label for="symptom">Symptom</label>
+    <textarea id="symptom" rows="2"></textarea>
+    <label for="apikey">API key (X-API-Key)</label>
+    <input id="apikey" type="password" autocomplete="off" placeholder="required to start or resume">
+    <div class="row" style="margin-top:12px">
+      <button id="start">Investigate</button>
+      <button id="resume" class="secondary" disabled>Resume</button>
+      <span id="status" class="muted"></span>
+    </div>
+    <h2 style="margin-top:20px">Agent steps <span class="muted" id="stepcount"></span></h2>
+    <div id="steps" aria-live="polite"><p class="muted">Steps stream here as the agents work.</p></div>
+  </section>
+
+  <section>
+    <h2>Root-cause hypothesis</h2>
+    <div id="hypothesis"><p class="muted">No investigation yet.</p></div>
+    <h2 style="margin-top:20px">Critic</h2>
+    <div id="critic" class="muted">-</div>
+    <h2 style="margin-top:20px">Cost &amp; tokens</h2>
+    <div id="usage" class="muted">-</div>
+  </section>
+
+  <section class="full">
+    <h2>Remediations waiting for approval</h2>
+    <label for="approver">Approver token (X-Approver-Token)</label>
+    <input id="approver" type="password" autocomplete="off" placeholder="required to approve or reject" style="max-width:420px">
+    <div id="actions"><p class="muted">Nothing pending.</p></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = { get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let current = null, source = null, scenarios = [];
+
+$("apikey").value = store.get("triage.apikey");
+$("approver").value = store.get("triage.approver");
+$("apikey").addEventListener("change", (e) => store.set("triage.apikey", e.target.value));
+$("approver").addEventListener("change", (e) => store.set("triage.approver", e.target.value));
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || res.statusText);
+  return body;
+}
+
+async function init() {
+  try {
+    const ready = await api("/readyz");
+    $("mode").textContent = `Mode: ${ready.cluster_mode} · retrieval: ${ready.retrieval_mode} · supervisor ${ready.models.supervisor}, workers ${ready.models.worker}`;
+  } catch (e) { $("mode").textContent = "Service not ready: " + e.message; }
+  scenarios = await api("/scenarios").catch(() => []);
+  $("scenario").innerHTML = scenarios.map((s) => `<option value="${esc(s.name)}">${esc(s.name)} (ns ${esc(s.namespace)})</option>`).join("");
+  const pick = () => { const s = scenarios.find((x) => x.name === $("scenario").value); $("symptom").value = s ? s.symptom : ""; };
+  $("scenario").addEventListener("change", pick); pick();
+  const last = new URLSearchParams(location.search).get("id");
+  if (last) { current = last; await refresh(); stream(); }
+  refreshActions();
+}
+
+function renderStep(s) {
+  if (s.kind === "tool") {
+    return `<div class="step tool"><b>${esc(s.agent)}</b> → <code>${esc(s.tool)}(${esc(JSON.stringify(s.args))})</code>
+      <span class="muted">${s.latency_ms ?? ""} ms</span><pre>${esc(s.result)}</pre></div>`;
+  }
+  const what = s.calls && s.calls.length ? `calls ${s.calls.map(esc).join(", ")}` : (s.text ? esc(s.text) : "thinking");
+  return `<div class="step llm"><b>${esc(s.agent)}</b> <span class="muted">${esc(s.model)} · ${s.input_tokens}→${s.output_tokens} tok · ${s.tokens_per_sec} tok/s · $${Number(s.cost_usd).toFixed(5)}</span><div>${what}</div></div>`;
+}
+
+let stepCount = 0;
+function addStep(s) {
+  if (stepCount === 0) $("steps").innerHTML = "";
+  stepCount++; $("stepcount").textContent = `(${stepCount})`;
+  $("steps").insertAdjacentHTML("beforeend", renderStep(s));
+  $("steps").scrollTop = $("steps").scrollHeight;
+}
+
+function stream() {
+  if (source) source.close();
+  stepCount = 0; $("steps").innerHTML = '<p class="muted">Waiting for the first step…</p>';
+  source = new EventSource(`/investigations/${current}/events`);
+  source.addEventListener("step", (e) => addStep(JSON.parse(e.data)));
+  source.addEventListener("status", (e) => { $("status").textContent = JSON.parse(e.data).status + "…"; });
+  source.addEventListener("done", async () => { source.close(); await refresh(); refreshActions(); });
+  source.onerror = () => { source.close(); refresh(); };
+}
+
+function renderHypothesis(h) {
+  if (!h) return '<p class="muted">Not reported yet.</p>';
+  const ev = (h.evidence || []).map((e) => `<li><span class="pill">${esc(e.source)}</span> <code>${esc(e.snippet)}</code></li>`).join("");
+  const rem = (h.proposed_remediations || []).map((r) => `<li><b>${esc(r.action)}</b> ${esc(r.deployment)} - ${esc(r.rationale)}</li>`).join("");
+  return `<div class="kv">
+    <span class="muted">Summary</span><span>${esc(h.summary)}</span>
+    <span class="muted">Root cause</span><span><b>${esc(h.root_cause)}</b></span>
+    <span class="muted">Category</span><span><span class="pill">${esc(h.category)}</span></span>
+    <span class="muted">Confidence</span><span>${Math.round((h.confidence || 0) * 100)}%</span>
+    <span class="muted">Runbooks</span><span>${(h.runbook_refs || []).map((r) => `<code>${esc(r)}</code>`).join(" ") || "-"}</span>
+  </div>
+  <h3 class="muted" style="font-size:13px;margin:12px 0 4px">Evidence</h3><ul>${ev || "<li>-</li>"}</ul>
+  <h3 class="muted" style="font-size:13px;margin:12px 0 4px">Proposed remediations</h3><ul>${rem || "<li>-</li>"}</ul>`;
+}
+
+function renderUsage(r) {
+  const by = (r.usage && r.usage.by_agent) || {};
+  const rows = Object.entries(by).map(([a, u]) => `<tr><td>${esc(a)}</td><td class="num">${u.llm_calls}</td><td class="num">${u.tool_calls}</td>
+    <td class="num">${u.input_tokens}/${u.output_tokens}</td><td class="num">${u.tokens_per_sec ?? "-"}</td><td class="num">$${u.cost_usd.toFixed(5)}</td></tr>`).join("");
+  return `<p><b>$${Number(r.cost_usd).toFixed(5)}</b> total · ${r.latency_ms ? (r.latency_ms / 1000).toFixed(1) + " s" : "-"}
+    ${r.trace_id ? `· trace <code>${esc(r.trace_id)}</code>` : ""}</p>
+    <div class="table-wrap"><table><thead><tr><th>Agent</th><th class="num">LLM</th><th class="num">Tools</th><th class="num">In/Out tok</th><th class="num">tok/s</th><th class="num">Cost</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6" class="muted">-</td></tr>'}</tbody></table></div>`;
+}
+
+async function refresh() {
+  if (!current) return;
+  const r = await api(`/investigations/${current}`);
+  const cls = r.status === "failed" ? "failed" : "";
+  $("status").innerHTML = `<span class="pill ${cls}">${esc(r.status)}</span> ${r.error ? esc(r.error) : ""}`;
+  $("resume").disabled = r.status !== "failed";
+  $("hypothesis").innerHTML = renderHypothesis(r.hypothesis);
+  const rounds = r.critic.rounds || [];
+  $("critic").innerHTML = rounds.length ? rounds.map((v) => `<div><span class="pill ${v.verdict === "PASS" ? "pass" : "revise"}">round ${v.round}: ${esc(v.verdict)}</span>
+    <ul>${(v.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("") : "-";
+  $("usage").innerHTML = renderUsage(r);
+  if (stepCount === 0 && r.steps.length) { $("steps").innerHTML = ""; r.steps.forEach(addStep); }
+}
+
+async function refreshActions() {
+  const list = await api("/approvals").catch(() => []);
+  const mine = list.filter((a) => !current || a.investigation_id === current || a.status === "pending").slice(0, 10);
+  $("actions").innerHTML = mine.length ? mine.map((a) => `<div class="action">
+      <div class="row"><b>${esc(a.action)}</b> <code>${esc(a.namespace)}/${esc(a.deployment)}</code>
+        <span class="pill">${esc(a.risk)} risk</span><span class="pill">${esc(a.status)}</span>
+        <span class="muted">requested by ${esc(a.requested_by)} · expires ${new Date(a.expires_at).toLocaleTimeString()}</span></div>
+      <div class="muted">${esc(a.rationale)}</div>
+      <pre>${esc(a.preview)}</pre>
+      ${a.status === "pending" ? `<div class="row"><button data-id="${esc(a.id)}" data-ok="1">Approve &amp; execute</button>
+        <button class="danger" data-id="${esc(a.id)}" data-ok="0">Reject</button></div>` : `<pre>${esc(JSON.stringify(a.result))}</pre>`}
+    </div>`).join("") : '<p class="muted">Nothing pending.</p>';
+}
+
+$("actions").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-id]"); if (!b) return;
+  b.disabled = true;
+  try {
+    await api(`/approvals/${b.dataset.id}`, { method: "POST",
+      headers: { "content-type": "application/json", "x-approver-token": $("approver").value },
+      body: JSON.stringify({ approve: b.dataset.ok === "1", approver: "web-ui" }) });
+  } catch (err) { alert("Approval failed: " + err.message); }
+  refreshActions();
+});
+
+$("start").addEventListener("click", async () => {
+  $("start").disabled = true;
+  try {
+    const r = await api("/investigations", { method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": $("apikey").value },
+      body: JSON.stringify({ scenario: $("scenario").value, symptom: $("symptom").value }) });
+    current = r.id; history.replaceState(null, "", `?id=${current}`);
+    $("hypothesis").innerHTML = '<p class="muted">Investigating…</p>'; $("critic").textContent = "-"; $("usage").textContent = "-";
+    stream();
+  } catch (err) { $("status").textContent = err.message; }
+  $("start").disabled = false;
+});
+
+$("resume").addEventListener("click", async () => {
+  try {
+    await api(`/investigations/${current}/resume`, { method: "POST", headers: { "x-api-key": $("apikey").value } });
+    stream();
+  } catch (err) { $("status").textContent = err.message; }
+});
+
+init();
+</script>
+</body>
+</html>
