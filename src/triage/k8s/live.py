@@ -54,10 +54,10 @@ class LiveClusterClient:
     ) -> str:
         """See :meth:`ClusterReader.get_pod_logs`."""
         try:
-            logs: str = self.core.read_namespaced_pod_log(
+            logs: str | None = self.core.read_namespaced_pod_log(
                 name, namespace, previous=previous, tail_lines=tail_lines
             )
-            return logs
+            return logs or ""
         except ApiException as exc:
             return f"<no logs: {exc.status} {exc.reason}>"
 

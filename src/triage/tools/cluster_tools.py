@@ -8,6 +8,7 @@ so the ReAct loop can reason about them.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -16,6 +17,8 @@ from google.adk.tools.tool_context import ToolContext
 from triage.k8s.base import JSON, ClusterError, ClusterReader
 from triage.k8s.normalize import parse_cpu_millicores, parse_memory_mib
 from triage.tools.registry import registry
+
+log = logging.getLogger(__name__)
 
 MAX_LOG_CHARS = 4000
 MAX_ITEMS = 50
@@ -30,6 +33,9 @@ def _safe(fn: Callable[[], JSON]) -> JSON:
         return fn()
     except ClusterError as exc:
         return {"error": str(exc)}
+    except Exception as exc:  # a tool must never crash the ReAct loop
+        log.warning("tool failed", exc_info=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def list_pods(namespace: str, tool_context: ToolContext) -> JSON:

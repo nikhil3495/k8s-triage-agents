@@ -89,7 +89,7 @@ class ReplayClusterClient:
         logs: dict[str, dict[str, str]] = self._get("logs")
         if name not in logs:
             raise ClusterError(f'pods "{name}" not found')
-        text = logs[name].get("previous" if previous else "current", "")
+        text = logs[name].get("previous" if previous else "current") or ""
         return "\n".join(text.splitlines()[-tail_lines:])
 
     def get_events(self, namespace: str, involved_object: str | None = None) -> list[JSON]:
