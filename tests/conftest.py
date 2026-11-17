@@ -16,7 +16,7 @@ from triage.rag.chunking import load_corpus
 from triage.rag.retriever import HybridRetriever
 from triage.runtime import Runtime, set_runtime
 from triage.sessions.service import make_session_service
-from triage.telemetry.metrics import reset_summary
+from triage.telemetry.metrics import record_approval_decision, reset_summary
 from triage.tools.registry import registry
 
 NS = "eval-bad-image-tag"
@@ -175,7 +175,11 @@ def runtime(
         settings=settings,
         engine=engine,
         approvals=ApprovalService(
-            engine, "test-approver", lambda: writer, ttl=timedelta(minutes=30)
+            engine,
+            "test-approver",
+            lambda: writer,
+            ttl=timedelta(minutes=30),
+            on_decision=record_approval_decision,
         ),
         retriever=retriever,
         session_service=make_session_service(settings.session_db_url),
