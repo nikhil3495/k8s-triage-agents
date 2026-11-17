@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-11-17T18:27:46.878094+00:00",
+  "run_at": "2026-11-17T18:53:29.736839+00:00",
   "mode": "replay",
   "model": "baseline",
   "models": {
@@ -15,8 +15,8 @@
     "evidence_recall": 0.917,
     "runbook_hit_at_3": 1.0,
     "critic_agreement": 1.0,
-    "latency_ms_p50": 992.1,
-    "latency_ms_max": 2922.4,
+    "latency_ms_p50": 1102.9,
+    "latency_ms_max": 3349.1,
     "cost_usd_total": 0.0,
     "cost_usd_mean": 0.0
   },
@@ -39,10 +39,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 2922.448400000576,
+      "latency_ms": 3349.077799997758,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 3.15
+      "wall_s": 3.59
     },
     {
       "scenario": "broken-service-selector",
@@ -61,10 +61,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 973.604200000409,
+      "latency_ms": 995.6048000021838,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.09
+      "wall_s": 1.11
     },
     {
       "scenario": "cpu-throttling",
@@ -83,10 +83,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 987.0579999987967,
+      "latency_ms": 1108.7264000088908,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.08
+      "wall_s": 1.22
     },
     {
       "scenario": "crashloop-command",
@@ -105,10 +105,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 923.6201000167057,
+      "latency_ms": 1102.59359999327,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.03
+      "wall_s": 1.23
     },
     {
       "scenario": "failing-readiness",
@@ -129,10 +129,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 936.4767999795731,
+      "latency_ms": 1103.3024000062142,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.05
+      "wall_s": 1.23
     },
     {
       "scenario": "missing-configmap",
@@ -151,10 +151,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 997.0895000151359,
+      "latency_ms": 993.9619000069797,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.08
+      "wall_s": 1.22
     },
     {
       "scenario": "oom-killed",
@@ -173,10 +173,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 1058.1806000263896,
+      "latency_ms": 1267.4479999986943,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.16
+      "wall_s": 1.38
     },
     {
       "scenario": "unschedulable",
@@ -197,10 +197,10 @@
       "critic_verdict": "PASS",
       "critic_rounds": 1,
       "critic_agreement": true,
-      "latency_ms": 1043.9544999971986,
+      "latency_ms": 1036.720999982208,
       "cost_usd": 0.0,
       "confidence": 0.7,
-      "wall_s": 1.17
+      "wall_s": 1.14
     }
   ]
 }
