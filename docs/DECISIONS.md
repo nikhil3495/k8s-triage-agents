@@ -56,7 +56,7 @@ Runbooks are chunked on `##` sections with front-matter metadata. Retrieval runs
 - The gate is root-cause accuracy ≥ 0.75, a starting point to tighten once real Gemini numbers exist.
 
 ## D11 - GitHub workflow files
-The `gh` token used during the build lacked the `workflow` scope, so GitHub rejected pushes touching `.github/workflows/`. The workflows live in `deploy/github-workflows/` until someone with the scope moves them (one command in STATUS.md). Local history was rewritten to relocate them **before the first push**; nothing that existed remotely was rewritten.
+The `gh` token used during the build lacked the `workflow` scope, so GitHub rejected pushes touching `.github/workflows/`. The workflows were parked in `deploy/github-workflows/`. Local history was rewritten to relocate them **before the first push**; nothing that existed remotely was rewritten. On 2026-11-18, once the scope was granted, they were moved to `.github/workflows/`. `deploy.yml` became manual-only (`workflow_dispatch`), because the project runs offline by choice and Cloud Run is optional.
 
 ## D12 - Cost guardrails
 - Cloud Run runs with min 0 / max 2 instances, 1 vCPU / 1 GiB, and concurrency 20.

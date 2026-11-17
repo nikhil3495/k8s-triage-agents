@@ -3,9 +3,11 @@ name: deploy
 # Build -> Artifact Registry -> Cloud Run, authenticated with Workload Identity
 # Federation (no JSON keys). One-time setup: scripts/setup_wif.sh, then set repo
 # variables GCP_PROJECT, GCP_WIF_PROVIDER, GCP_DEPLOY_SA.
+#
+# OPTIONAL: deploying is not required. The project runs fully offline (see the
+# README "Run locally" section). Automatic deploys on push are disabled; this
+# runs only when triggered manually, and skips itself unless GCP_PROJECT is set.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency: deploy-${{ github.ref }}

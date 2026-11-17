@@ -46,7 +46,7 @@ flowchart TB
 | **Persistent sessions**, investigations **resume after failure** | ADK `DatabaseSessionService` + `ResumabilityConfig`; [`test_crash_then_resume_continues_from_checkpoint`](tests/unit/test_resume.py) kills a run mid-way and proves finished steps are not redone |
 | Every remediation **gated behind human approval** | [`hitl/service.py`](src/triage/hitl/service.py); [`test_hitl.py`](tests/unit/test_hitl.py) and [`test_api.py`](tests/unit/test_api.py) prove the executor is unreachable without the approver token |
 | **OpenTelemetry / Cloud Trace** with per-agent **tokens/sec, cost per request, latency** | [`telemetry/plugin.py`](src/triage/telemetry/plugin.py) ADK plugin + [`pricing.py`](src/triage/telemetry/pricing.py); Cloud Trace exporter; waterfall below |
-| **Eval suite replays injected-fault scenarios on a test cluster** before release | [`eval/`](eval): 8 faults on kind, scored and gated at accuracy ≥ 0.75; [`deploy/github-workflows/eval.yml`](deploy/github-workflows/eval.yml) |
+| **Eval suite replays injected-fault scenarios on a test cluster** before release | [`eval/`](eval): 8 faults on kind, scored and gated at accuracy ≥ 0.75; [`.github/workflows/eval.yml`](.github/workflows/eval.yml) |
 
 ## How it works: one incident in 60 seconds
 Recorded `oom-killed` incident (fixture captured from kind). These are the actual tool calls from the run in the screenshot (offline baseline model; with Gemini the *choice* of calls is the model's):
