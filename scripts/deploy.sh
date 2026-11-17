@@ -84,8 +84,11 @@ put_secret triage-api-key "$TRIAGE_API_KEY"
 put_secret triage-approver-token "$APPROVER_TOKEN"
 put_secret triage-session-db-url "$SESSION_DB_URL"
 
+echo ">> RAG index with Gemini embeddings (built locally; key never enters the image)"
+GEMINI_API_KEY="$GEMINI_API_KEY" uv run python -m scripts.build_index
+
 echo ">> build (Cloud Build) -> $IMAGE"
-gcloud builds submit --project "$PROJECT" --region "$REGION" --tag "$IMAGE" .
+gcloud builds submit --project "$PROJECT" --region "$REGION" --tag "$IMAGE" --ignore-file .dockerignore .
 
 echo ">> deploy Cloud Run"
 gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \

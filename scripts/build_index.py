@@ -7,14 +7,22 @@ and says so (``embedding_model: null``).
 
 from __future__ import annotations
 
+import json
 import os
+import sys
 
 from triage.config import get_settings
-from triage.rag.retriever import build_index, save_index
+from triage.rag.chunking import load_corpus
+from triage.rag.retriever import build_index, corpus_hash, save_index
 
 
 def main() -> None:
     s = get_settings()
+    if "--keep-if-fresh" in sys.argv and s.rag_index_path.is_file():
+        existing = json.loads(s.rag_index_path.read_text(encoding="utf-8"))
+        if existing.get("corpus_hash") == corpus_hash(load_corpus(s.runbooks_dir)):
+            print(f"keeping fresh index (embedding_model={existing.get('embedding_model')})")
+            return
     key = (
         s.gemini_api_key.get_secret_value()
         if s.gemini_api_key

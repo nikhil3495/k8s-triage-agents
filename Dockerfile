@@ -1,7 +1,6 @@
-# syntax=docker/dockerfile:1.7
 # ---------- build stage: resolve deps with uv, build the RAG index ----------
 FROM python:3.12-slim AS build
-COPY --from=ghcr.io/astral-sh/uv:0.9.7 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.8 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
@@ -9,12 +8,14 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY src ./src
 COPY runbooks ./runbooks
 COPY scripts ./scripts
-RUN uv sync --locked --no-dev
-# Embeddings are added only when a GEMINI_API_KEY build secret is supplied;
-# otherwise the index is lexical-only and /readyz reports retrieval_mode=bm25.
-RUN --mount=type=secret,id=gemini_api_key,required=false \
-    GEMINI_API_KEY="$(cat /run/secrets/gemini_api_key 2>/dev/null || true)" \
-    /app/.venv/bin/python -m scripts.build_index
+# Optional pre-built index with Gemini embeddings (scripts/deploy.sh creates it
+# with the API key *outside* the image, so no secret ever enters a layer).
+COPY README.md dat[a]/rag_index.jso[n] ./prebuilt/
+RUN mkdir -p data && (mv prebuilt/rag_index.json data/ 2>/dev/null || true) && rm -rf prebuilt \
+    && uv sync --locked --no-dev
+# Keep the pre-built index if it matches the runbooks; otherwise build a
+# lexical (BM25) index now. /readyz reports which retrieval mode is active.
+RUN /app/.venv/bin/python -m scripts.build_index --keep-if-fresh
 
 # ---------- runtime stage: slim, non-root ----------
 FROM python:3.12-slim AS runtime
