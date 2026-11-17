@@ -1,0 +1,49 @@
+name: deploy
+
+# Build -> Artifact Registry -> Cloud Run, authenticated with Workload Identity
+# Federation (no JSON keys). One-time setup: scripts/setup_wif.sh, then set repo
+# variables GCP_PROJECT, GCP_WIF_PROVIDER, GCP_DEPLOY_SA.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: deploy-${{ github.ref }}
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: asia-south1
+  SERVICE: k8s-triage-agents
+  REPO: triage
+
+jobs:
+  deploy:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build and push with Cloud Build
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/${{ vars.GCP_PROJECT }}/$REPO/$SERVICE:${GITHUB_SHA::12}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud builds submit --project "${{ vars.GCP_PROJECT }}" --region "$REGION" --tag "$IMAGE" .
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" --project "${{ vars.GCP_PROJECT }}" --region "$REGION" \
+            --image "$IMAGE" --service-account "triage-runtime@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com" \
+            --cpu 1 --memory 1Gi --min-instances 0 --max-instances 2 --concurrency 20 \
+            --allow-unauthenticated \
+            --set-env-vars "CLUSTER_MODE=replay,TRACE_EXPORTER=gcp,ENABLE_CLOUD_MONITORING=true,GCP_PROJECT=${{ vars.GCP_PROJECT }}" \
+            --set-secrets "GEMINI_API_KEY=triage-gemini-api-key:latest,TRIAGE_API_KEY=triage-api-key:latest,APPROVER_TOKEN=triage-approver-token:latest,SESSION_DB_URL=triage-session-db-url:latest"
+      - name: Smoke test
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --project "${{ vars.GCP_PROJECT }}" --region "$REGION" --format 'value(status.url)')
+          curl -fsS "$URL/healthz" && curl -fsS "$URL/readyz"

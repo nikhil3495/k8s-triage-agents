@@ -1,0 +1,64 @@
+name: eval
+
+# Release gate: replays the injected-fault scenarios on a real kind cluster.
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "baseline (no LLM) or gemini"
+        default: gemini
+        type: choice
+        options: [gemini, baseline]
+      threshold:
+        description: "Minimum root-cause accuracy"
+        default: "0.75"
+
+permissions:
+  contents: read
+
+jobs:
+  kind-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      MODEL: ${{ inputs.model || 'gemini' }}
+      THRESHOLD: ${{ inputs.threshold || '0.75' }}
+      KUBE_CONTEXT: kind-triage-eval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: triage-eval
+          version: v0.29.0
+          node_image: kindest/node:v1.33.1
+      - name: Build RAG index (embeddings when the key is present)
+        run: uv run python -m scripts.build_index
+      - name: Fail fast when the gate needs Gemini but no key is configured
+        if: env.MODEL == 'gemini' && env.GEMINI_API_KEY == ''
+        run: |
+          echo "::error::GEMINI_API_KEY repo secret is not set"; exit 1
+      - name: Inject faults, investigate live, score
+        run: |
+          uv run python -m eval.run_eval --mode live --model "$MODEL" \
+            --threshold "$THRESHOLD" --record --out eval/results/latest.json
+      - name: Job summary
+        if: always()
+        run: cat eval/results/latest.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            eval/results/latest.*
+            eval/fixtures/*.json
